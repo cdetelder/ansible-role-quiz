@@ -1,0 +1,50 @@
+---
+
+  - name: Update packages
+    dnf:
+      name: "*"
+      state: latest
+      update_cache: true
+
+  - name: Install git + update packages DNF on rocky 
+    dnf:
+      name: git
+      state: latest
+    
+  - name: Download node.js script
+    get_url:
+      url: https://rpm.nodesource.com/setup_23.x
+      dest: /tmp/script-install-nodejs.sh
+      mode: '0755'
+
+  - name: Install node.js 
+    shell: sh /tmp/script-install-nodejs.sh && dnf install nodejs -y
+  
+  - name: Clone git repository
+    git:
+      repo: 'https://github.com/franklin-tutorials/quiz-ansible.git'
+      dest: /opt/quiz-ansible
+      version: HEAD
+
+  - name: Install NPM dependencies
+    command: npm install
+    args:
+      chdir: /opt/quiz-ansible
+
+  - name: Compile app
+    command: npm run build
+    args:
+      chdir: /opt/quiz-ansible
+
+  - name: Install serve
+    community.general.npm:
+      name: serve
+      global: yes
+      state: present
+
+  - name: Launch app
+    shell: serve -s dist -l 3000
+    args:
+      chdir: /opt/quiz-ansible
+    async: 3600
+    poll: 0
